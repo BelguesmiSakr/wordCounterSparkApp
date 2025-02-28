@@ -8,6 +8,9 @@ target/
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea/scala_compiler.xml
+.idea/scala_settings.xml
+
 *.iws
 *.iml
 *.ipr

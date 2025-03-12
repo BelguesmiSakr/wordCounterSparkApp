@@ -1,6 +1,6 @@
 package org.sakr.countWordSparkScalaApp
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object Utils {
   //function used to create a spark session and return it to be use cross app

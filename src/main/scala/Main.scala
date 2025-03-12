@@ -4,30 +4,40 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import Utils.buildSparkSession
 import org.apache.spark.sql.functions._
 
+case class Data  (value:String)
+
 object Main{
-  def main (args: Array[String]): Unit ={
+  def readAnalyseFile (path:String): DataFrame = {
     val spark = buildSparkSession("wordCounter")
 
-    val sourcePath = "data/sample2.txt"
-    val textSplitToDF = spark.read // return dataFrame reader, read the txt file and creat a dataFrame
-      .option("lineSep", " ") // optional, to use a line seperator in our case " "
-      .text(sourcePath)
+    val fileContent = spark.read.text(path).first().getString(0)
+      .trim.split("\\s+").toSeq.map(Data)
+    val textSplitDF = spark.createDataFrame(fileContent)
 
-    textSplitToDF.show()
-    countWords(textSplitToDF)
-    val a=countDuplicatedWords(textSplitToDF)
-    println(a)
+    val totalWordsCount = countWords(textSplitDF)
+    val duplicatedWordsCount =countDuplicatedWords(textSplitDF)
+
+    val result = spark.createDataFrame(Seq((totalWordsCount,duplicatedWordsCount)))
+      .toDF("Total_Words","Duplicated_Words")
+
+    result
+      .write
+      .option("header","true")
+      .format("csv")
+      .mode("overwrite")
+      .save("data/result.csv")
+
+    val test = spark.read
+      .option("header", "true")
+      .csv("data/result.csv")
+
+    result
   }
-//todo persist the result => dataframe (word count / duplicated word) 
+
   def countWords(dataFrame: DataFrame): Long = {
-    var wordCount = dataFrame.count() // count the number of rows in the dataFrame
-    if (wordCount==1){
-      val firstRow = dataFrame.head() // Get the first row
-      if (firstRow.isNullAt(0) || firstRow.getString(0).trim.isEmpty) {
-        wordCount = 0
-      }
-    }
-    println(s"result ==> $wordCount") // print the result to console
+    val firstRow = dataFrame.head() // Get the first row
+    val count = dataFrame.count()
+    val wordCount = if (count == 1 & (firstRow.isNullAt(0) || firstRow.getString(0).trim.isEmpty)) 0 else count // count the number of rows in the dataFrame
     wordCount
   }
 
@@ -38,8 +48,7 @@ object Main{
       .groupBy("value")
       .count()
       .filter(col("count")>1)
-      .agg(sum("count"))
-      .collect()(0)(0)
-      .asInstanceOf[Long]
+      .count()
   }
 }
+

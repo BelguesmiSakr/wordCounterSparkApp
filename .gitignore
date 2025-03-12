@@ -48,3 +48,5 @@ build/
 
 ### Scala ###
 .bsp/
+
+result.csv
